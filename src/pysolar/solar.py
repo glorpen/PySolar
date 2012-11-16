@@ -148,9 +148,6 @@ class DjManager():
 		
 		self.epoll.register(solar_app, select.EPOLLIN)
 	
-	def report_handler(self, dj, num, report):
-		print report
-			
 	def remove_dj_device(self, device):
 		devpath = device.get("DEVPATH")
 		logger.debug("removing dj device %s" % repr(device))
@@ -169,10 +166,15 @@ class DjManager():
 			raise Exception("unified device already exists")
 		devices[pos] = name
 		
+		self.devices_changed_handler()
+		
+		
 	def remove_unified_device(self, device):
 		logger.debug("removing unified device %s" % repr(device))
 		pos = int(device.get("HID_PHYS").split(':')[-1])
 		del self.djs[device.parent.get("DEVPATH")].devices[pos]
+		
+		self.devices_changed_handler()
 
 	def monitor(self):
 		self.udev_monitor.start()
@@ -230,6 +232,11 @@ class DjManager():
 	
 	def shutdown(self):
 		self._running = False
+		
+	def report_handler(self, dj, num, report):
+		print report
+	def devices_changed_handler(self):
+		pass
 		
 
 if __name__ == "__main__":

@@ -17,6 +17,7 @@ class SolarDBus(dbus.service.Object):
 		
 		self.manager = DjManager()
 		self.manager.report_handler = self.report_handler
+		self.manager.devices_changed_handler = self.DevicesChangedEvent
 		
 		DBusGMainLoop(set_as_default=True)
 		self.mainloop = gobject.MainLoop()
@@ -58,6 +59,10 @@ class SolarDBus(dbus.service.Object):
 	@dbus.service.signal(dbus_interface='pl.glorpen.PySolar', signature='suuu')
 	def LightnessEvent(self, dj_path, device_num, charge, lightness):
 		logger.debug("lightness event")
+	
+	@dbus.service.signal(dbus_interface='pl.glorpen.PySolar', signature='')
+	def DevicesChangedEvent(self):
+		pass
 	
 	def report_handler(self, dj, num, report):
 		if report.has_lightness():
