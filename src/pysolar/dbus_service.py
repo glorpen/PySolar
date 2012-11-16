@@ -4,28 +4,46 @@ Created on 15-11-2012
 
 @author: Arkadiusz Dzięgiel
 '''
-import dbus.service.Object
-import dbus.service.signal
+import dbus.service
+from dbus.service import Object, signal
 from pysolar.solar import DjManager, logger
 import threading
 import logging
+from dbus.mainloop.glib import DBusGMainLoop
+import gobject, signal
 
 class SolarDBus(dbus.service.Object):
-	def __init__(self, object_path):
-		dbus.service.Object.__init__(self, dbus.SystemBus(), "pl.glorpen.PySolar")
+	def __init__(self):
 		
 		self.manager = DjManager()
 		self.manager.report_handler = self.report_handler
 		
+		DBusGMainLoop(set_as_default=True)
+		self.mainloop = gobject.MainLoop()
+		
+		bus = dbus.SystemBus()
+		self.name = dbus.service.BusName("pl.glorpen.PySolar", bus)
+		
+		dbus.service.Object.__init__(self, bus, "/pl/glorpen/PySolar")
+		
+		signal.signal(signal.SIGINT, self.stop)
+		signal.signal(signal.SIGTERM, self.stop)
+		
+		logger.debug("dbus service started")
+
+		
+	def start(self):
 		self.manager.find_devices() #initial devices scan
+		self.manager_thread = threading.Thread(target=self.manager.monitor)
+		self.manager_thread.start()
 		
-		self.monitor_thread = threading.Thread(target=self.manager.monitor_dj)
-		self.monitor_thread.start()
-		#self.manager.monitor_dj() #listen to udev
-		
+		self.mainloop.run()
+	
 	def stop(self):
 		self.manager.shutdown()
-		self.monitor_thread.join()
+		self.manager_thread.join()
+		
+		self.mainloop.quit()
 
 	@dbus.service.method(dbus_interface='pl.glorpen.PySolar', in_signature='', out_signature='a(ssu)')
 	def ListDevices(self):
@@ -48,12 +66,15 @@ class SolarDBus(dbus.service.Object):
 			self.ChargeEvent(dj.devpath, num, report.get_charge())
 	
 if __name__ == "__main__":
-	
-	from dbus.mainloop.glib import DBusGMainLoop
-	DBusGMainLoop(set_as_default=True)
-	
 	logger.setLevel(logging.DEBUG)
+	gobject.threads_init()
 	
-	s = SolarDBus()
-	
-	#s.stop()
+	service = SolarDBus()
+	try:
+		service.start()
+	except KeyboardInterrupt:
+		pass
+	except Exception as e:
+		logger.error("error: %s" % e)
+	finally:
+		service.stop()
