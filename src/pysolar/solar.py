@@ -1,9 +1,8 @@
 import pyudev
 import os
 import struct
-import threading
-import time
 import logging
+import select
 
 logging.basicConfig()
 
@@ -51,7 +50,7 @@ class Solar(object):
 	def shutdown(self):
 		try:
 			os.close(self.fd)
-		except OSError:
+		except OSError as e:
 			pass
 	
 	def __init__(self, hidraw, dj_name, devpath):
@@ -59,8 +58,11 @@ class Solar(object):
 		
 		self.devpath = devpath
 		self.dj_name = dj_name
-		self.fd = os.open(hidraw, os.O_RDWR)
+		self.fd = os.open(hidraw, os.O_RDWR | os.O_NONBLOCK)
 		self.devices = {}
+
+	def fileno(self):
+		return self.fd
 
 	def send_report(self, device_index):
 		if device_index not in self.devices:
@@ -83,15 +85,6 @@ class Solar(object):
 				logger.debug("sending lightness request to %s (%d)" % (self.dj_name, rep.data["device_index"]))
 			return rep
 	
-	def iter_reports(self):
-		while True:
-			try:
-				report = self.handle_one_report()
-			except OSError:
-				return
-			
-			if report: yield report
-
 	def _parse_report(self, report):
 		rep = self._unpack((('type','B'), ('device_index','B'), ('feature_index','B'), ('fcnt','B')), report[0:4])
 		#rep._make(struct.unpack_from("BBBB",report[0:4]))
@@ -117,6 +110,12 @@ class DjManager():
 	def __init__(self):
 		self.context = pyudev.Context()
 		self.djs = {}
+		
+		self.epoll = select.epoll()
+		self._running = True
+		
+		self.udev_monitor = pyudev.Monitor.from_netlink(self.context)
+		self.udev_monitor.filter_by(u"hid")
 	
 	def find_hidraw_devices(self, *devices):
 		for d in self.context.list_devices(subsystem="hidraw"):
@@ -147,19 +146,16 @@ class DjManager():
 			break
 		self.djs[devpath] = solar_app
 		
-		threading.Thread(target=self.report_loop, args=(devpath,)).start()
+		self.epoll.register(solar_app, select.EPOLLIN)
 	
 	def report_handler(self, dj, num, report):
 		print report
-	
-	def report_loop(self, djpath):
-		dj = self.djs[djpath]
-		for r in dj.iter_reports():
-			self.report_handler(dj, r.data["device_index"], r)
 			
 	def remove_dj_device(self, device):
 		devpath = device.get("DEVPATH")
 		logger.debug("removing dj device %s" % repr(device))
+		
+		self.epoll.unregister(self.djs[devpath])
 		del self.djs[devpath]
 	
 	def add_unified_device(self, device):
@@ -178,50 +174,68 @@ class DjManager():
 		pos = int(device.get("HID_PHYS").split(':')[-1])
 		del self.djs[device.parent.get("DEVPATH")].devices[pos]
 
-	def monitor_dj(self):
+	def monitor(self):
+		self.udev_monitor.start()
+		self.epoll.register(self.udev_monitor, select.EPOLLIN)
 		
-		monitor = pyudev.Monitor.from_netlink(self.context)
+		logger.debug("starting monitor loop")
 		
-		monitor.filter_by(u"hid")
+		try:
 		
-		def callback(device):
-			if device.action == "add":
-				for d in self.context.list_devices(subsystem="hid", DRIVER='logitech-djreceiver'):
-					if d.get("DEVPATH") != device.get("DEVPATH"): continue
-					self.add_dj_device(d)
-				if device.parent.get("DEVPATH") in self.djs:
-					self.add_unified_device(device)
-			if device.action == "remove":
-				if device.get("DEVPATH") in self.djs:
-					self.remove_dj_device(device)
-				if device.parent.get("DEVPATH") in self.djs:
-					self.remove_unified_device(device)
+			while self._running:
+				
+				for (fd, event) in self.epoll.poll(timeout=1):
+					
+					if event != select.EPOLLIN:
+						continue
+					
+					if fd == self.udev_monitor.fileno():
+						self._on_device_changed()
+					for s in self.djs.itervalues():
+						if s.fileno() == fd:
+							report = s.handle_one_report()
+							if report:
+								self.report_handler(s, report.data["device_index"], report)
+							break
 		
-		self.dj_observer = pyudev.MonitorObserver(monitor, callback=callback)
-		self.dj_observer.start()
+		except KeyboardInterrupt:
+			pass
+		except Exception as e:
+			logger.error("exception: %s" % e)
+		finally:
+			self.epoll.close()
+			
+			for s in self.djs.itervalues():
+				s.shutdown()
+			
+			logger.debug("monitor loop ended")
+			
+			self.djs.clear()
+	
+	def _on_device_changed(self):
 		
+		device = self.udev_monitor._receive_device()
+		
+		if device.action == "add":
+			for d in self.context.list_devices(subsystem="hid", DRIVER='logitech-djreceiver'):
+				if d.get("DEVPATH") != device.get("DEVPATH"): continue
+				self.add_dj_device(d)
+			if device.parent.get("DEVPATH") in self.djs:
+				self.add_unified_device(device)
+		if device.action == "remove":
+			if device.get("DEVPATH") in self.djs:
+				self.remove_dj_device(device)
+			if device.parent.get("DEVPATH") in self.djs:
+				self.remove_unified_device(device)
 	
 	def shutdown(self):
-		self.dj_observer.stop()
+		self._running = False
 		
-		for d in self.djs.values():
-			d.shutdown()
-		
-		for thread in threading.enumerate():
-			if thread is not threading.currentThread():
-				thread.join()
-		
-		self.djs.clear()
 
 if __name__ == "__main__":
 	
 	logger.setLevel(logging.DEBUG)
 	
 	manager = DjManager()
-	try:
-		manager.find_devices() #initial devices scan
-		manager.monitor_dj() #listen to udev
-		manager.dj_observer.join()
-	finally:
-		logger.info("shutting down")
-		manager.shutdown()
+	manager.find_devices() #initial devices scan
+	manager.monitor() #listen to udev
