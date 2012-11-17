@@ -16,7 +16,6 @@ setup(
 	author_email='arkadiusz.dziegiel@glorpen.pl',
 	url='http://www.python.org/sigs/distutils-sig/',
 	packages=['pysolar'],
-	scripts=['pysolar/client.py'],
 	data_files=[
 		("/etc/dbus-1/system.d/", ["dbus-policy/pl.glorpen.PySolar.conf"])
 	]
