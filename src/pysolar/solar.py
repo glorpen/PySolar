@@ -154,6 +154,8 @@ class DjManager():
 		
 		self.epoll.unregister(self.djs[devpath])
 		del self.djs[devpath]
+		
+		self.devices_changed_handler()
 	
 	def add_unified_device(self, device):
 		logger.debug("adding unified device %s" % repr(device))
