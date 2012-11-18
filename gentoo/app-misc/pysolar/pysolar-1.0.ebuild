@@ -3,20 +3,18 @@
 # $Header: /var/cvsroot/gentoo-x86/dev-python/apse/apse-0.2-r1.ebuild,v 1.2 2010/07/23 19:53:35 arfrever Exp $
 
 EAPI="3"
-#PYTHON_DEPEND="2"
 SUPPORT_PYTHON_ABIS="1"
 RESTRICT_PYTHON_ABIS="3.*"
 
 inherit distutils python
 
-DESCRIPTION="Approximate String Matching in Python."
-HOMEPAGE="http://www.personal.psu.edu/staff/i/u/iua1/python/apse/"
+DESCRIPTION="DBus service for providing lightness and battery levels for Logitech Solar devices."
+HOMEPAGE="https://bitbucket.org/glorpen/pysolar"
 
-EGIT_REPO_URI="git://github.com/glorpen/bumblepyy.git"
-SRC_URI="file:///mnt/sandbox/workspace/pysolar/src/dist/solar.tar.bz2"
+SRC_URI="https://bitbucket.org/glorpen/${PN}/get/v${PV}.tar.bz2 -> ${PN}-v${PV}.tar.bz2"
 
 SLOT="0"
-KEYWORDS="~amd64 ~ia64 ~ppc ~ppc64 ~x86"
+KEYWORDS="amd64 ~ia64 ~ppc ~ppc64 x86"
 IUSE="gnome-shell +daemon"
 
 DEPEND="
@@ -30,13 +28,9 @@ DEPEND="
 "
 RDEPEND="${DEPEND}"
 
-#src_unpack(){
-#    echo '';
-#}
-
-S="${WORKDIR}/solar"
-
 src_prepare(){
+	S=$( ls -1d "${WORKDIR}/glorpen-pysolar-"* ) || die
+	
     cd "${S}/src"
     distutils_src_prepare || die
 }

@@ -11,7 +11,7 @@ depend() {
 
 start() {
 	ebegin "Starting PySolar"
-	start-stop-daemon --start --pidfile ${PIDFILE} --exec /usr/bin/pysolar-dbus -- --background --pid_file ${PIDFILE}
+	start-stop-daemon --start --pidfile ${PIDFILE} --exec /usr/bin/pysolar-dbus -- --background --pid-file ${PIDFILE}
 	eend $?
 }
 
