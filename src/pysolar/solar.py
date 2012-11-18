@@ -8,7 +8,6 @@ logging.basicConfig()
 
 logger = logging.getLogger("solar")
 
-
 class Report(object):
 	def __init__(self, data, device_name):
 		self.data = data

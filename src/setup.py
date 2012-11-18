@@ -14,8 +14,10 @@ setup(
 	description='DBus service for providing lightness and battery levels for Logitech Solar devices',
 	author='Arkadiusz Dzięgiel',
 	author_email='arkadiusz.dziegiel@glorpen.pl',
-	url='http://www.python.org/sigs/distutils-sig/',
+	url='http://glorpen.pl',
 	packages=['pysolar'],
+	scripts=['scripts/pysolar-dbus'],
+	#requires=["PythonDaemon"],
 	data_files=[
 		("/etc/dbus-1/system.d/", ["dbus-policy/pl.glorpen.PySolar.conf"])
 	]

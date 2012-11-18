@@ -69,7 +69,7 @@ class SolarDBus(dbus.service.Object):
 			self.LightnessEvent(dj.devpath, num, report.get_charge(), report.get_lightness())
 		else:
 			self.ChargeEvent(dj.devpath, num, report.get_charge())
-	
+
 if __name__ == "__main__":
 	logger.setLevel(logging.DEBUG)
 	gobject.threads_init()

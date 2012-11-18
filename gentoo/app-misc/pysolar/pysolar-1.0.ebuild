@@ -17,15 +17,16 @@ SRC_URI="file:///mnt/sandbox/workspace/pysolar/src/dist/solar.tar.bz2"
 
 SLOT="0"
 KEYWORDS="~amd64 ~ia64 ~ppc ~ppc64 ~x86"
-IUSE="gnome-shell"
+IUSE="gnome-shell +daemon"
 
 DEPEND="
     dev-python/configobj
     dev-python/python-daemon
     gnome-shell? (
-	gnome-base/gnome-shell
-	app-admin/eselect-gnome-shell-extensions
+		gnome-base/gnome-shell
+		app-admin/eselect-gnome-shell-extensions
     )
+    daemon? ( dev-python/python-daemon )
 "
 RDEPEND="${DEPEND}"
 
@@ -50,12 +51,11 @@ src_install(){
     distutils_src_install || die
     
     if use gnome-shell; then
-	insinto /usr/share/gnome-shell/extensions
-	doins -r "${S}"/gnome-shell/*@*
+		insinto /usr/share/gnome-shell/extensions
+		doins -r "${S}"/gnome-shell/*@*
     fi
     
-    #newconfd "${FILESDIR}/bumblepyy.confd" bumblepyy
-    #newinitd "${FILESDIR}/bumblepyy.initd" bumblepyy
+    use daemon && newinitd "${FILESDIR}/pysolar.init.d" pysolar
 }
 
 pkg_postinst() {

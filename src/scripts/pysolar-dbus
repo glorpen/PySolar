@@ -1,0 +1,51 @@
+#!python
+
+import argparse, os
+
+from pysolar import dbus_service
+from pysolar.solar import logger
+import gobject
+
+def run(args):
+	gobject.threads_init()
+	
+	service = dbus_service.SolarDBus()
+	try:
+		service.start()
+	except KeyboardInterrupt:
+		pass
+	except Exception as e:
+		logger.error("error: %s" % e)
+	finally:
+		service.stop()
+	
+
+class PidContext():
+    def __init__(self, path):
+        self.path = path
+    def __enter__(self):
+        with open(self.path, "w") as f:
+            f.write(str(os.getpid()))
+    def __exit__(self, *_exc):
+        os.unlink(self.path)
+        
+
+if __name__ == '__main__':
+
+    parser = argparse.ArgumentParser(description="Run PySolar service")
+    parser.add_argument("--pid-file", "-p", type=str, help="Pid file to use", default="/var/run/pysolar.pid")
+    parser.add_argument("--background", "-b", help="Run service in background", default=False, action="store_true")
+
+    args=parser.parse_args()
+    if args.background:
+        import daemon
+
+        context = daemon.DaemonContext(
+            pidfile=PidContext(args.pid_file),
+            #stdout = sys.stdout,
+            #stderr = sys.stderr
+        )
+        with context:
+            run(args)
+    else:
+        run(args)
