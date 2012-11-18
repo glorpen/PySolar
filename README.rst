@@ -63,6 +63,10 @@ Daemon events:
 - LightnessEvent(dj_path, device_num, charge, lightness)
 - DevicesChangedEvent() - happens when logitech device is removed or added to the system
 
+Daemon methods:
+
+- ListDevices() - returns list of found devices as (name[string], dj_path[string], device_num[uint])
+
 
 You can event start only "core" module, that is one responsible for reading events from USB devices. Useful for debugging, if you ever needed one.
 
