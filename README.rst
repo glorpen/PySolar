@@ -4,6 +4,8 @@ PySolar
 
 Main purpose of this package is to provide end-user with charge data and lightness meter from Logitech Solar Keyboard.
 
+Library/application is only tested with Logitech Wireless Solar Keyboard K750, but other devices could work as well.
+
 For now, package consists of:
 
 - DBus service
