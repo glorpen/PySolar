@@ -2,3 +2,4 @@ syntax: regexp
 ^\.settings$
 ^\.project$
 ^\.pydevproject$
+.*\.pyc$
