@@ -10,7 +10,7 @@ from distutils.core import setup
 
 setup(
 	name='PySolar',
-	version='1.1',
+	version='1.2',
 	description='DBus service for providing lightness and battery levels for Logitech Solar devices',
 	author='Arkadiusz Dzięgiel',
 	author_email='arkadiusz.dziegiel@glorpen.pl',
