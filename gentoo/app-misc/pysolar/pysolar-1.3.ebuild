@@ -24,7 +24,7 @@ DEPEND="
 		>=gnome-base/gnome-shell-3.6
 		app-admin/eselect-gnome-shell-extensions
     )
-    daemon? ( dev-python/python-daemon ),
+    daemon? ( dev-python/python-daemon )
     gtk? ( dev-python/pygtk )
 "
 RDEPEND="${DEPEND}"
