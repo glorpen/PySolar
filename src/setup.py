@@ -10,7 +10,7 @@ from distutils.core import setup
 
 setup(
     name='PySolar',
-    version='1.3.1',
+    version='1.3.2',
     description='DBus service for providing lightness and battery levels for Logitech Solar devices',
     author='Arkadiusz Dzięgiel',
     author_email='arkadiusz.dziegiel@glorpen.pl',
@@ -20,5 +20,6 @@ setup(
     #requires=["PythonDaemon"],
     data_files=[
         ("/etc/dbus-1/system.d/", ["dbus-policy/pl.glorpen.PySolar.conf"])
-    ]
+    ],
+    package_data={'pysolar': ['resources/*.png']},
 )
