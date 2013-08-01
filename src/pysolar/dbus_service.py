@@ -62,7 +62,14 @@ class SolarDBus(dbus.service.Object):
     
     @dbus.service.signal(dbus_interface='pl.glorpen.PySolar', signature='')
     def DevicesChangedEvent(self):
-        pass
+        logger.debug("devices changed event")
+    
+    @dbus.service.method(dbus_interface='pl.glorpen.PySolar', in_signature='s', out_signature='u')
+    def GetLastCharge(self, dj_path):
+        if dj_path in self.manager.djs:
+            return self.manager.djs[dj_path].last_charge
+        else:
+            raise Exception("Path %s was not registered" % dj_path)
     
     def report_handler(self, dj, num, report):
         if report.has_lightness():

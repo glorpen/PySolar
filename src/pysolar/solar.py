@@ -43,6 +43,8 @@ class Solar(object):
     FUNCTION_LIGHT = 1
     FUNCTION_CHARGE = 2
     
+    last_charge = 0
+    
     def __del__(self):
         self.shutdown()
 
@@ -74,7 +76,9 @@ class Solar(object):
         if report != "":
             r = self._parse_report(report)
             if r and r["device_index"] in self.devices:
-                return Report(r, self.devices[r["device_index"]])
+                report = Report(r, self.devices[r["device_index"]])
+                self.last_charge = report.get_charge()
+                return report
 
     def handle_one_report(self):
         rep = self.get_report()

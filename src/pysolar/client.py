@@ -75,6 +75,9 @@ class SolarClient(object):
         print device, charge, lightness
     def on_load_devices(self):
         print "reloading devices"
+        
+        for i in self._devices.values():
+            print "Last known charge for %s: %d" % (i.name, self._solar.GetLastCharge(i.device))
     
 if __name__ == '__main__':
     
