@@ -8,6 +8,7 @@ Created on 07-10-2012
 import dbus
 from dbus.mainloop.glib import DBusGMainLoop
 import gobject
+import logging
 
 class Device(object):
     def __init__(self, name, device, num):
@@ -15,6 +16,7 @@ class Device(object):
         self.name = name
         self.device = device
         self.num = num
+        self.id = "%s#%d" % (self.device, self.num)
         
         super(Device, self).__init__()
     
@@ -28,7 +30,9 @@ class Device(object):
 
 class SolarClient(object):
     def __init__(self):
+        super(SolarClient, self).__init__()
         
+        self.logger = logging.getLogger(__name__+".SolarClient")
         DBusGMainLoop(set_as_default=True)
         
         self.loop = gobject.MainLoop()
@@ -39,6 +43,7 @@ class SolarClient(object):
         
         super(SolarClient, self).__init__()
         
+    def setup(self):
         self.load_devices()
         
         self._solar.connect_to_signal('DevicesChangedEvent', self.load_devices)
@@ -56,28 +61,30 @@ class SolarClient(object):
             key = (str(device), int(num))
             self._devices[key] = Device(str(name), *key)
         
-        self.on_load_devices()
+        self.on_load_devices(self._devices.values())
         
-        return self._devices
+        for device in self._devices.values():
+            charge = self._solar.GetLastCharge(device.device)
+            self.on_initial_charge(device, charge)
     
     def get_device(self, devpath, num):
         return self._devices[(devpath, num)]
     
-    def list_devices(self):
-        return self._devices.values()
-    
     def start(self):
+        self.setup()
         self.loop.run()
     def stop(self):
         self.loop.quit()
         
-    def on_charge_event(self, device, charge, lightness):
-        print device, charge, lightness
-    def on_load_devices(self):
+    def on_load_devices(self, devices):
         print "reloading devices"
         
-        for i in self._devices.values():
-            print "Last known charge for %s: %d" % (i.name, self._solar.GetLastCharge(i.device))
+    def on_charge_event(self, device, charge, lightness):
+        print device, charge, lightness
+    
+    def on_initial_charge(self, device, charge):
+        print device, charge
+    
     
 if __name__ == '__main__':
     

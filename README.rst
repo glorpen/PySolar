@@ -89,3 +89,14 @@ gnome-shell extension
 Named PySolar, connects to DBus service and listen for events.
 
 Lists every found solar logitech device, its charge level and lightness if available.
+
+GTK Systray Client
+------------------
+
+To run:
+
+::
+
+   python -m pysolar.gtk_systray
+
+Client will simply present systray animated icon with first device battery value. In its tooltip are listed all found devices.
